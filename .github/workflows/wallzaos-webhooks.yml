@@ -85,6 +85,7 @@ jobs:
         run: |
           docker build -t wallza-dovecot-ci ../Dockerfiles/dovecot
           docker run --rm --entrypoint sh wallza-dovecot-ci -c 'dpkg -s dovecot-managesieved >/dev/null'
+          docker run --rm -v "$GITHUB_WORKSPACE/conf/dovecot:/etc/dovecot:ro" --entrypoint doveconf wallza-dovecot-ci -n -c /etc/dovecot/dovecot.conf
       - name: Run WallzaOS webhook unit tests
         run: go test ./internal/service/wallzaos -count=1
       - name: Compile all integration touchpoints
