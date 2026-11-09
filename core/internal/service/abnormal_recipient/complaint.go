@@ -2,6 +2,7 @@ package abnormal_recipient
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/mail"
 	"regexp"
@@ -85,7 +86,7 @@ func RecordComplaint(ctx context.Context, input ComplaintInput) error {
 				OrderDesc("log_time_millis").
 				Limit(1).
 				Scan(&latest)
-			if err != nil {
+			if err != nil && err != sql.ErrNoRows {
 				return fmt.Errorf("could not find the latest successful delivery: %w", err)
 			}
 			postfixMessageID = latest.PostfixMessageID
