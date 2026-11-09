@@ -14,13 +14,6 @@ func init() {
 				log_time_millis BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::INTEGER),
 				log_time INTEGER GENERATED ALWAYS AS (log_time_millis / 1000) STORED
 			)`,
-			`ALTER TABLE mailstat_complaints ADD COLUMN IF NOT EXISTS provider_event_id VARCHAR(255) NOT NULL DEFAULT ''`,
-			`ALTER TABLE mailstat_complaints ADD COLUMN IF NOT EXISTS provider VARCHAR(64) NOT NULL DEFAULT ''`,
-			`CREATE UNIQUE INDEX IF NOT EXISTS complaints_provider_event_id
-				ON mailstat_complaints (provider, provider_event_id)
-				WHERE provider_event_id <> ''`,
-			`CREATE INDEX IF NOT EXISTS complaints_recipient_logTime
-				ON mailstat_complaints (recipient, log_time)`,
 
 			`-- Indexes
 			CREATE INDEX IF NOT EXISTS removed_logTime ON mailstat_removed (log_time)`,
@@ -152,6 +145,13 @@ func init() {
 			`-- Indexes
 			CREATE INDEX IF NOT EXISTS complaints_postfixMessageId_logTime ON mailstat_complaints (postfix_message_id, log_time)`,
 			`CREATE INDEX IF NOT EXISTS complaints_logTime_millis ON mailstat_complaints (log_time_millis)`,
+			`ALTER TABLE mailstat_complaints ADD COLUMN IF NOT EXISTS provider_event_id VARCHAR(255) NOT NULL DEFAULT ''`,
+			`ALTER TABLE mailstat_complaints ADD COLUMN IF NOT EXISTS provider VARCHAR(64) NOT NULL DEFAULT ''`,
+			`CREATE UNIQUE INDEX IF NOT EXISTS complaints_provider_event_id
+				ON mailstat_complaints (provider, provider_event_id)
+				WHERE provider_event_id <> ''`,
+			`CREATE INDEX IF NOT EXISTS complaints_recipient_logTime
+				ON mailstat_complaints (recipient, log_time)`,
 		}
 
 		for _, sql := range sqlList {
