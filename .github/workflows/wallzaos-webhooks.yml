@@ -7,6 +7,14 @@ on:
       - "core/internal/service/database_initialization/wallzaos_webhooks.go"
       - "core/internal/service/maillog_stat/**"
       - "core/internal/service/timers/timers.go"
+      - "core/api/mail_services/**"
+      - "core/internal/controller/mail_services/**"
+      - "core/frontend/src/api/modules/settings/wallzaos-webhooks.ts"
+      - "core/frontend/src/views/settings/wallzaos-webhooks/**"
+      - "core/frontend/src/router/modules/settings.ts"
+      - "core/frontend/src/router/modules/settings.test.ts"
+      - "core/frontend/package.json"
+      - "core/frontend/pnpm-lock.yaml"
       - "docker-compose.yml"
       - "env_init"
       - ".github/workflows/wallzaos-webhooks.yml"
@@ -18,6 +26,14 @@ on:
       - "core/internal/service/database_initialization/wallzaos_webhooks.go"
       - "core/internal/service/maillog_stat/**"
       - "core/internal/service/timers/timers.go"
+      - "core/api/mail_services/**"
+      - "core/internal/controller/mail_services/**"
+      - "core/frontend/src/api/modules/settings/wallzaos-webhooks.ts"
+      - "core/frontend/src/views/settings/wallzaos-webhooks/**"
+      - "core/frontend/src/router/modules/settings.ts"
+      - "core/frontend/src/router/modules/settings.test.ts"
+      - "core/frontend/package.json"
+      - "core/frontend/pnpm-lock.yaml"
       - "docker-compose.yml"
       - "env_init"
       - ".github/workflows/wallzaos-webhooks.yml"
@@ -40,7 +56,7 @@ jobs:
       - name: Check Go formatting
         run: |
           gofmt -d internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go
-          files="$(gofmt -l internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go)"
+          files="$(gofmt -l internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go api/mail_services/v1/wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go api/mail_services/mail_services.go)"
           if [ -n "$files" ]; then
             echo "$files"
             exit 1
@@ -48,4 +64,30 @@ jobs:
       - name: Run WallzaOS webhook unit tests
         run: go test ./internal/service/wallzaos -count=1
       - name: Compile all integration touchpoints
-        run: go test ./internal/service/wallzaos ./internal/service/maillog_stat ./internal/service/timers ./internal/service/database_initialization -run '^$' -count=1
+        run: go test ./internal/service/wallzaos ./internal/service/maillog_stat ./internal/service/timers ./internal/service/database_initialization ./api/mail_services/... ./internal/controller/mail_services -run '^
+ -count=1
+
+  frontend-settings:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: core/frontend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: core/frontend/pnpm-lock.yaml
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Test Settings routes
+        run: pnpm exec vitest run src/router/modules/settings.test.ts
+      - name: Build frontend
+        run: pnpm build
