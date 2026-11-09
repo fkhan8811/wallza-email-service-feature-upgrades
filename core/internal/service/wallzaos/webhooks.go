@@ -137,7 +137,7 @@ func EnqueueOnce(ctx context.Context, eventID, eventType string, data map[string
 	}
 
 	now := time.Now().Unix()
-	_, err = g.DB().Ctx(ctx).Model(deliveryTable).InsertIgnore(g.Map{
+	_, err = g.DB().Model(deliveryTable).Ctx(ctx).InsertIgnore(g.Map{
 		"event_id":         eventID,
 		"event_type":       eventType,
 		"payload":          string(payload),
@@ -178,7 +178,7 @@ func DispatchPending(ctx context.Context, limit int) {
 
 	now := time.Now().Unix()
 	// Recover claims left behind by a process restart or crash.
-	_, recoverErr := g.DB().Ctx(ctx).Model(deliveryTable).
+	_, recoverErr := g.DB().Model(deliveryTable).Ctx(ctx).
 		Where("status", "processing").
 		Where("processing_started_at < ?", now-120).
 		Update(g.Map{"status": "pending", "processing_started_at": 0})
@@ -187,7 +187,7 @@ func DispatchPending(ctx context.Context, limit int) {
 	}
 
 	var rows []webhookDelivery
-	err = g.DB().Ctx(ctx).Model(deliveryTable).
+	err = g.DB().Model(deliveryTable).Ctx(ctx).
 		Fields("event_id, event_type, payload, attempts").
 		Where("status", "pending").
 		Where("next_attempt_at <= ?", time.Now().Unix()).
@@ -204,7 +204,7 @@ func DispatchPending(ctx context.Context, limit int) {
 			return
 		}
 
-		result, claimErr := g.DB().Ctx(ctx).Model(deliveryTable).
+		result, claimErr := g.DB().Model(deliveryTable).Ctx(ctx).
 			Where("event_id", row.EventID).
 			Where("status", "pending").
 			Update(g.Map{"status": "processing", "processing_started_at": time.Now().Unix()})
@@ -220,7 +220,7 @@ func DispatchPending(ctx context.Context, limit int) {
 		sendErr := sendWebhook(ctx, webhookHTTP, cfg, row)
 		attempts := row.Attempts + 1
 		if sendErr == nil {
-			_, updateErr := g.DB().Ctx(ctx).Model(deliveryTable).
+			_, updateErr := g.DB().Model(deliveryTable).Ctx(ctx).
 				Where("event_id", row.EventID).
 				Update(g.Map{
 					"status":       "delivered",
@@ -243,7 +243,7 @@ func DispatchPending(ctx context.Context, limit int) {
 		} else {
 			nextAttempt = time.Now().Add(retryDelays[attempts-1]).Unix()
 		}
-		_, updateErr := g.DB().Ctx(ctx).Model(deliveryTable).
+		_, updateErr := g.DB().Model(deliveryTable).Ctx(ctx).
 			Where("event_id", row.EventID).
 			Update(g.Map{
 				"status":          nextStatus,
