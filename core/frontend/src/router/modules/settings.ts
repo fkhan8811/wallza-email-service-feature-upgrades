@@ -51,6 +51,12 @@ const route: RouteRecordRaw = {
 					meta: { title: 'Send Queue', titleKey: '' },
 					component: () => import('@/views/settings/send-queue/index.vue'),
 				},
+				{
+					path: 'wallzaos-webhooks',
+					name: 'WallzaOSWebhooks',
+					meta: { title: 'WallzaOS Webhooks', titleKey: '' },
+					component: () => import('@/views/settings/wallzaos-webhooks/index.vue'),
+				},
 			],
 		},
 		{

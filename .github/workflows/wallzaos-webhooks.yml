@@ -1,0 +1,143 @@
+name: WallzaOS webhook tests
+
+on:
+  pull_request:
+    paths:
+      - "core/internal/service/wallzaos/**"
+      - "core/internal/service/database_initialization/wallzaos_webhooks.go"
+      - "core/internal/service/database_initialization/maillog_stat.go"
+      - "core/internal/service/abnormal_recipient/**"
+      - "core/internal/service/batch_mail/batch_mail.go"
+      - "core/internal/service/batch_mail/task_executor.go"
+      - "core/internal/service/batch_mail/api_mail_send.go"
+      - "core/internal/service/batch_mail/api_mail_suppression_test.go"
+      - "core/internal/service/middlewares/rbac.go"
+      - "docs/PROVIDER_COMPLAINT_INGESTION.md"
+      - "core/internal/service/maillog_stat/**"
+      - "core/internal/service/timers/timers.go"
+      - "core/api/mail_services/**"
+      - "core/internal/controller/mail_services/**"
+      - "core/frontend/src/api/modules/settings/wallzaos-webhooks.ts"
+      - "core/frontend/src/views/settings/wallzaos-webhooks/**"
+      - "core/frontend/src/router/modules/settings.ts"
+      - "core/frontend/src/router/modules/settings.test.ts"
+      - "core/frontend/package.json"
+      - "core/frontend/pnpm-lock.yaml"
+      - "Dockerfiles/dovecot/**"
+      - "conf/dovecot/dovecot.conf"
+      - "conf/dovecot/conf.d/10-master.conf"
+      - "conf/webmail/custom.inc.php"
+      - "docs/MAILBOX_FILTER_RULES.md"
+      - "docker-compose.yml"
+      - "env_init"
+      - ".github/workflows/wallzaos-webhooks.yml"
+  push:
+    branches:
+      - "wallza/**"
+    paths:
+      - "core/internal/service/wallzaos/**"
+      - "core/internal/service/database_initialization/wallzaos_webhooks.go"
+      - "core/internal/service/database_initialization/maillog_stat.go"
+      - "core/internal/service/abnormal_recipient/**"
+      - "core/internal/service/batch_mail/batch_mail.go"
+      - "core/internal/service/batch_mail/task_executor.go"
+      - "core/internal/service/batch_mail/api_mail_send.go"
+      - "core/internal/service/batch_mail/api_mail_suppression_test.go"
+      - "core/internal/service/middlewares/rbac.go"
+      - "docs/PROVIDER_COMPLAINT_INGESTION.md"
+      - "core/internal/service/maillog_stat/**"
+      - "core/internal/service/timers/timers.go"
+      - "core/api/mail_services/**"
+      - "core/internal/controller/mail_services/**"
+      - "core/frontend/src/api/modules/settings/wallzaos-webhooks.ts"
+      - "core/frontend/src/views/settings/wallzaos-webhooks/**"
+      - "core/frontend/src/router/modules/settings.ts"
+      - "core/frontend/src/router/modules/settings.test.ts"
+      - "core/frontend/package.json"
+      - "core/frontend/pnpm-lock.yaml"
+      - "Dockerfiles/dovecot/**"
+      - "conf/dovecot/dovecot.conf"
+      - "conf/dovecot/conf.d/10-master.conf"
+      - "conf/webmail/custom.inc.php"
+      - "docs/MAILBOX_FILTER_RULES.md"
+      - "docker-compose.yml"
+      - "env_init"
+      - ".github/workflows/wallzaos-webhooks.yml"
+
+jobs:
+  webhook-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: core
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: core/go.mod
+          cache: true
+          cache-dependency-path: core/go.sum
+      - name: Check Go formatting
+        run: |
+          gofmt -d internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/database_initialization/maillog_stat.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go internal/service/abnormal_recipient/complaint.go internal/service/abnormal_recipient/complaint_test.go internal/service/batch_mail/batch_mail.go internal/service/batch_mail/task_executor.go internal/service/batch_mail/api_mail_send.go internal/service/batch_mail/api_mail_suppression_test.go internal/service/middlewares/rbac.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/v1/provider_complaints.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_provider_complaints.go
+          files="$(gofmt -l internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/database_initialization/maillog_stat.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go internal/service/abnormal_recipient/complaint.go internal/service/abnormal_recipient/complaint_test.go internal/service/batch_mail/batch_mail.go internal/service/batch_mail/task_executor.go internal/service/batch_mail/api_mail_send.go internal/service/batch_mail/api_mail_suppression_test.go internal/service/middlewares/rbac.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/v1/provider_complaints.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_provider_complaints.go)"
+          if [ -n "$files" ]; then
+            echo "$files"
+            exit 1
+          fi
+      - name: Validate complaint schema migration and authenticated route
+        run: |
+          grep -Fq 'ADD COLUMN IF NOT EXISTS provider_event_id' internal/service/database_initialization/maillog_stat.go
+          grep -Fq 'path:"/mail_services/complaint_ingest"' api/mail_services/v1/provider_complaints.go
+          grep -Fq 'RecordComplaint(ctx' internal/controller/mail_services/mail_services_v1_provider_complaints.go
+          grep -Fq 'filterAbnormalRecipients(ctx, recipients)' internal/service/batch_mail/task_executor.go
+          grep -Fq 'count >= ?' internal/service/batch_mail/task_executor.go
+          grep -Fq 'ensureRecipientNotHardSuppressed(ctx, log.Recipient)' internal/service/batch_mail/api_mail_send.go
+      - name: Validate ManageSieve configuration and network boundary
+        run: |
+          grep -Eq '^protocols = .*sieve' ../conf/dovecot/dovecot.conf
+          grep -Fq 'port = 4190' ../conf/dovecot/conf.d/10-master.conf
+          grep -Fq "'managesieve'" ../conf/webmail/custom.inc.php
+          grep -Fq "tls://dovecot:4190" ../conf/webmail/custom.inc.php
+          if grep -Eq '^[[:space:]]*-[[:space:]]*"?[^"]*4190:4190' ../docker-compose.yml; then
+            echo "ManageSieve must remain internal to the Docker network"
+            exit 1
+          fi
+      - name: Build and inspect the Dovecot ManageSieve image
+        run: |
+          docker build -t wallza-dovecot-ci ../Dockerfiles/dovecot
+          docker run --rm --entrypoint sh wallza-dovecot-ci -c 'dpkg -s dovecot-managesieved >/dev/null'
+          docker run --rm -v "$GITHUB_WORKSPACE/conf/dovecot:/etc/dovecot:ro" --entrypoint doveconf wallza-dovecot-ci -n -c /etc/dovecot/dovecot.conf
+      - name: Run webhook, complaint-ingestion and transactional suppression unit tests
+        run: |
+          go test ./internal/service/wallzaos ./internal/service/abnormal_recipient -count=1
+          go test ./internal/service/batch_mail -run TestNormalizeSuppressionRecipient -count=1
+      - name: Compile all integration touchpoints
+        run: go test ./internal/service/wallzaos ./internal/service/maillog_stat ./internal/service/timers ./internal/service/database_initialization ./internal/service/abnormal_recipient ./internal/service/batch_mail ./internal/service/middlewares ./api/mail_services/... ./internal/controller/mail_services -run DO_NOT_RUN -count=1
+
+  frontend-settings:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: core/frontend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: core/frontend/pnpm-lock.yaml
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Test Settings routes
+        run: pnpm exec vitest run src/router/modules/settings.test.ts
+      - name: Build frontend
+        run: pnpm build

@@ -452,7 +452,7 @@ func CreateTaskWithRecipients(ctx context.Context, req *v1.CreateTaskReq, addTyp
 		}
 		abnormalMap := make(map[string]int, len(abnormalRecipients))
 		for _, ar := range abnormalRecipients {
-			abnormalMap[ar.Recipient] = ar.Count
+			abnormalMap[strings.ToLower(ar.Recipient)] = ar.Count
 		}
 
 		filter := ContactFilter{GroupId: req.GroupId, TagIds: req.TagIds, TagLogic: req.TagLogic}
@@ -480,7 +480,7 @@ func CreateTaskWithRecipients(ctx context.Context, req *v1.CreateTaskReq, addTyp
 
 		filteredContacts := make([]*entity.Contact, 0, len(contacts))
 		for _, contact := range contacts {
-			if _, exists := abnormalMap[contact.Email]; exists {
+			if _, exists := abnormalMap[strings.ToLower(contact.Email)]; exists {
 				continue
 			}
 			if e := gvalid.New().Rules("email").Data(contact.Email).Run(ctx); e != nil {

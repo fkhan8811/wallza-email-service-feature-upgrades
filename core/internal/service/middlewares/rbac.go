@@ -44,7 +44,7 @@ func PathToRouteInfo(path string) (module, action, resource string) {
 		switch actionName {
 		case "list", "detail":
 			action = "read"
-		case "create":
+		case "create", "complaint_ingest":
 			action = "create"
 		case "update":
 			action = "update"

@@ -192,6 +192,7 @@ func init() {
 			`CREATE INDEX IF NOT EXISTS idx_bm_contacts_email ON bm_contacts (email)`,
 			`CREATE INDEX IF NOT EXISTS idx_bm_contacts_active ON bm_contacts (active)`,
 			`CREATE INDEX IF NOT EXISTS idx_abnormal_recipient_count ON abnormal_recipient (recipient,count)`,
+			`CREATE INDEX IF NOT EXISTS idx_abnormal_recipient_lower_hard ON abnormal_recipient (LOWER(recipient), count)`,
 			`CREATE INDEX IF NOT EXISTS idx_group_email ON bm_contacts(group_id, email)`,
 			`CREATE INDEX IF NOT EXISTS idx_api_mail_logs_api_id ON api_mail_logs (api_id)`,
 			`CREATE INDEX IF NOT EXISTS idx_api_mail_logs_recipient ON api_mail_logs (recipient)`,
