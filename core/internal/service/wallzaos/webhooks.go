@@ -100,6 +100,11 @@ func loadWebhookConfig() (webhookConfig, bool, error) {
 	return webhookConfig{URL: rawURL, Secret: secret}, true, nil
 }
 
+func webhookConfigPresent() bool {
+	return strings.TrimSpace(os.Getenv("WALLZAOS_WEBHOOK_URL")) != "" ||
+		strings.TrimSpace(os.Getenv("WALLZAOS_WEBHOOK_SECRET")) != ""
+}
+
 func signature(secret string, payload []byte) string {
 	mac := hmac.New(sha256.New, []byte(secret))
 	_, _ = mac.Write(payload)
@@ -123,8 +128,7 @@ func EnqueueOnce(ctx context.Context, eventID, eventType string, data map[string
 		g.Log().Warning(ctx, "WallzaOS webhook is not configured correctly; preserving event until configuration is fixed: ", err)
 		// Do not lose mail events because a partially configured endpoint is invalid.
 		// Keep them in the outbox so the dispatcher can deliver them after correction.
-		if strings.TrimSpace(os.Getenv("WALLZAOS_WEBHOOK_URL")) == "" &&
-			strings.TrimSpace(os.Getenv("WALLZAOS_WEBHOOK_SECRET")) == "" {
+		if !webhookConfigPresent() {
 			return
 		}
 	} else if !enabled {
