@@ -70,9 +70,16 @@ unsuccessful attempts an event is marked
 deleted when an endpoint is unavailable.
 
 A 2xx response is considered successful. Non-2xx responses, timeouts and
-connection failures are retried. The queue currently has no customer-facing
-replay screen; failed rows remain in the database for diagnosis and later
-administrative replay tooling.
+connection failures are retried. The Settings page provides a searchable
+delivery history, payload inspection and manual retry for failed events.
+
+## Retention
+
+Terminal deliveries (`delivered` and `failed`) are pruned after 30 days by
+default. Set `WALLZAOS_WEBHOOK_RETENTION_DAYS` to a value from 7 to 365 to
+change this period. Invalid values fall back to 30 days. Pending and processing
+deliveries are never removed by this cleanup. The cleanup runs once shortly
+after startup and then daily.
 
 ## Deployment note
 
