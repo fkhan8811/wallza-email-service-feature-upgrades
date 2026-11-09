@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,8 +23,11 @@ import (
 )
 
 const (
-	deliveryTable = "bm_wallzaos_webhook_deliveries"
-	maxAttempts   = 6
+	deliveryTable        = "bm_wallzaos_webhook_deliveries"
+	maxAttempts          = 6
+	defaultRetentionDays = 30
+	minRetentionDays     = 7
+	maxRetentionDays     = 365
 )
 
 var (
@@ -287,4 +291,36 @@ func truncateError(value string, max int) string {
 		return value
 	}
 	return value[:max]
+}
+
+func ConfiguredRetentionDays() int {
+	raw := strings.TrimSpace(os.Getenv("WALLZAOS_WEBHOOK_RETENTION_DAYS"))
+	if raw == "" {
+		return defaultRetentionDays
+	}
+	days, err := strconv.Atoi(raw)
+	if err != nil || days < minRetentionDays || days > maxRetentionDays {
+		g.Log().Warning(context.Background(), "Invalid WALLZAOS_WEBHOOK_RETENTION_DAYS; using default retention of ", defaultRetentionDays, " days")
+		return defaultRetentionDays
+	}
+	return days
+}
+
+// PruneTerminalDeliveries removes only completed or permanently failed events.
+// Pending and processing deliveries are retained regardless of age.
+func PruneTerminalDeliveries(ctx context.Context) {
+	days := ConfiguredRetentionDays()
+	cutoff := time.Now().Add(-time.Duration(days) * 24 * time.Hour).Unix()
+	result, err := g.DB().Model(deliveryTable).Ctx(ctx).
+		WhereIn("status", []string{"delivered", "failed"}).
+		Where("created_at < ?", cutoff).
+		Delete()
+	if err != nil {
+		g.Log().Warning(ctx, "Could not prune expired WallzaOS webhook deliveries: ", err)
+		return
+	}
+	deleted, err := result.RowsAffected()
+	if err == nil && deleted > 0 {
+		g.Log().Info(ctx, "Pruned expired WallzaOS webhook deliveries: ", deleted, " records; retention days: ", days)
+	}
 }
