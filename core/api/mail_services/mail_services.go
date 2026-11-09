@@ -33,4 +33,5 @@ type IMailServicesV1 interface {
 	GetWallzaOSWebhookList(ctx context.Context, req *v1.GetWallzaOSWebhookListReq) (res *v1.GetWallzaOSWebhookListRes, err error)
 	GetWallzaOSWebhookDetail(ctx context.Context, req *v1.GetWallzaOSWebhookDetailReq) (res *v1.GetWallzaOSWebhookDetailRes, err error)
 	RetryWallzaOSWebhook(ctx context.Context, req *v1.RetryWallzaOSWebhookReq) (res *v1.RetryWallzaOSWebhookRes, err error)
+	IngestProviderComplaint(ctx context.Context, req *v1.IngestProviderComplaintReq) (res *v1.IngestProviderComplaintRes, err error)
 }
