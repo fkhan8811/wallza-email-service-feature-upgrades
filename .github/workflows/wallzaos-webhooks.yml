@@ -39,6 +39,11 @@ on:
       - "core/frontend/src/router/modules/settings.test.ts"
       - "core/frontend/package.json"
       - "core/frontend/pnpm-lock.yaml"
+      - "Dockerfiles/dovecot/**"
+      - "conf/dovecot/dovecot.conf"
+      - "conf/dovecot/conf.d/10-master.conf"
+      - "conf/webmail/custom.inc.php"
+      - "docs/MAILBOX_FILTER_RULES.md"
       - "docker-compose.yml"
       - "env_init"
       - ".github/workflows/wallzaos-webhooks.yml"
@@ -76,6 +81,10 @@ jobs:
             echo "ManageSieve must remain internal to the Docker network"
             exit 1
           fi
+      - name: Build and inspect the Dovecot ManageSieve image
+        run: |
+          docker build -t wallza-dovecot-ci ../Dockerfiles/dovecot
+          docker run --rm --entrypoint sh wallza-dovecot-ci -c 'dpkg-query -W -f="${Status}" dovecot-managesieved | grep -q "install ok installed"'
       - name: Run WallzaOS webhook unit tests
         run: go test ./internal/service/wallzaos -count=1
       - name: Compile all integration touchpoints
