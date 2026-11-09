@@ -17,7 +17,7 @@ type WallzaOSWebhookDelivery struct {
 }
 
 type GetWallzaOSWebhookListReq struct {
-	g.Meta   `path:"/wallzaos_webhooks/list" method:"get" summary:"List WallzaOS webhook deliveries"`
+	g.Meta   `path:"/mail_services/list" method:"get" summary:"List WallzaOS webhook deliveries"`
 	Page     int    `json:"page" v:"min:1" d:"1"`
 	PageSize int    `json:"page_size" v:"min:1|max:100" d:"20"`
 	Status   string `json:"status" v:"in:pending,processing,delivered,failed" dc:"Optional status filter"`
@@ -33,7 +33,7 @@ type GetWallzaOSWebhookListRes struct {
 }
 
 type GetWallzaOSWebhookDetailReq struct {
-	g.Meta  `path:"/wallzaos_webhooks/detail" method:"get" summary:"Get WallzaOS webhook delivery payload"`
+	g.Meta  `path:"/mail_services/detail" method:"get" summary:"Get WallzaOS webhook delivery payload"`
 	EventID string `json:"event_id" v:"required" dc:"Delivery ID"`
 }
 
@@ -46,7 +46,7 @@ type GetWallzaOSWebhookDetailRes struct {
 }
 
 type RetryWallzaOSWebhookReq struct {
-	g.Meta  `path:"/wallzaos_webhooks/retry" method:"post" summary:"Retry a failed WallzaOS webhook delivery"`
+	g.Meta  `path:"/mail_services/update" method:"post" summary:"Retry a failed WallzaOS webhook delivery"`
 	EventID string `json:"event_id" v:"required" dc:"Delivery ID"`
 }
 
