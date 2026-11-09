@@ -28,14 +28,18 @@ const (
 
 var (
 	dispatchMu  sync.Mutex
-	webhookHTTP = &http.Client{Timeout: 5 * time.Second}
+	webhookHTTP = &http.Client{
+		Timeout: 5 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	retryDelays = []time.Duration{
 		30 * time.Second,
 		2 * time.Minute,
 		10 * time.Minute,
 		30 * time.Minute,
 		2 * time.Hour,
-		12 * time.Hour,
 	}
 )
 
@@ -172,6 +176,16 @@ func DispatchPending(ctx context.Context, limit int) {
 		limit = 25
 	}
 
+	now := time.Now().Unix()
+	// Recover claims left behind by a process restart or crash.
+	_, recoverErr := g.DB().Ctx(ctx).Model(deliveryTable).
+		Where("status", "processing").
+		Where("processing_started_at < ?", now-120).
+		Update(g.Map{"status": "pending", "processing_started_at": 0})
+	if recoverErr != nil {
+		g.Log().Warning(ctx, "Could not recover stale WallzaOS webhook claims: ", recoverErr)
+	}
+
 	var rows []webhookDelivery
 	err = g.DB().Ctx(ctx).Model(deliveryTable).
 		Fields("event_id, event_type, payload, attempts").
@@ -193,7 +207,7 @@ func DispatchPending(ctx context.Context, limit int) {
 		result, claimErr := g.DB().Ctx(ctx).Model(deliveryTable).
 			Where("event_id", row.EventID).
 			Where("status", "pending").
-			Update(g.Map{"status": "processing"})
+			Update(g.Map{"status": "processing", "processing_started_at": time.Now().Unix()})
 		if claimErr != nil {
 			g.Log().Warning(ctx, "Could not claim WallzaOS webhook delivery: ", claimErr)
 			continue
@@ -211,8 +225,9 @@ func DispatchPending(ctx context.Context, limit int) {
 				Update(g.Map{
 					"status":       "delivered",
 					"attempts":     attempts,
-					"delivered_at": time.Now().Unix(),
-					"last_error":   "",
+					"delivered_at":          time.Now().Unix(),
+					"processing_started_at": 0,
+					"last_error":            "",
 				})
 			if updateErr != nil {
 				g.Log().Warning(ctx, "Could not mark WallzaOS webhook as delivered: ", updateErr)
@@ -234,7 +249,8 @@ func DispatchPending(ctx context.Context, limit int) {
 				"status":          nextStatus,
 				"attempts":        attempts,
 				"next_attempt_at": nextAttempt,
-				"last_error":      truncateError(sendErr.Error(), 1000),
+				"processing_started_at": 0,
+				"last_error":            truncateError(sendErr.Error(), 1000),
 			})
 		if updateErr != nil {
 			g.Log().Warning(ctx, "Could not update failed WallzaOS webhook delivery: ", updateErr)
