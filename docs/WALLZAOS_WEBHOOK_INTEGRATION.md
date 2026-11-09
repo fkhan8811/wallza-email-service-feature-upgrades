@@ -23,7 +23,9 @@ WALLZAOS_WEBHOOK_SECRET=replace-with-a-random-secret-of-at-least-32-characters
 ```
 
 The variables are read by the BillionMail core container. Do not commit a real
-secret into source control.
+secret into source control. When one setting is missing or invalid, new events
+are still stored in the outbox and delivery resumes after the configuration is
+corrected. When both settings are empty, event forwarding remains disabled.
 
 ## Events
 
