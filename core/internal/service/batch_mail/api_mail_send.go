@@ -8,6 +8,7 @@ import (
 	"billionmail-core/internal/service/maillog_stat"
 	"billionmail-core/internal/service/public"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -28,6 +29,34 @@ const (
 	LockKey      = "api_mail_queue_lock"
 	LockTimeout  = 60 * 2 // Lock timeout duration (seconds)
 )
+
+var ErrRecipientHardSuppressed = errors.New("recipient is hard-suppressed by a provider complaint")
+
+func normalizeSuppressionRecipient(recipient string) string {
+	return strings.ToLower(strings.TrimSpace(recipient))
+}
+
+// ensureRecipientNotHardSuppressed is the final guard immediately before an
+// API email is handed to SMTP. It fails closed if suppression status cannot
+// be checked, so provider complaints also protect direct API/transactional sends.
+func ensureRecipientNotHardSuppressed(ctx context.Context, recipient string) error {
+	normalized := normalizeSuppressionRecipient(recipient)
+	if normalized == "" {
+		return errors.New("recipient is empty")
+	}
+
+	count, err := g.DB().Model("abnormal_recipient").Ctx(ctx).
+		Where("LOWER(recipient) = ?", normalized).
+		Where("count >= ?", 3).
+		Count()
+	if err != nil {
+		return fmt.Errorf("could not verify recipient suppression status: %w", err)
+	}
+	if count > 0 {
+		return ErrRecipientHardSuppressed
+	}
+	return nil
+}
 
 type ApiMailLog struct {
 	Id        int64
@@ -329,6 +358,10 @@ func ProcessApiMailQueue(ctx context.Context) {
 
 // Use the sender that has been created
 func sendApiMailWithSender(ctx context.Context, apiTemplate *entity.ApiTemplates, subject string, content string, log ApiMailLog, sender *mail_service.EmailSender) error {
+	if err := ensureRecipientNotHardSuppressed(ctx, log.Recipient); err != nil {
+		return err
+	}
+
 	// generate message ID
 	messageId := "<" + log.MessageId + ">"
 	baseURL := domains.GetBaseURLBySender(log.Addresser)
@@ -416,6 +449,9 @@ func preloadData(ctx context.Context, logs []ApiMailLog) (*CacheData, error) {
 
 // send email
 func sendApiMail(ctx context.Context, apiTemplate *entity.ApiTemplates, subject string, content string, log ApiMailLog) error {
+	if err := ensureRecipientNotHardSuppressed(ctx, log.Recipient); err != nil {
+		return err
+	}
 
 	// create email sender
 	sender, err := mail_service.NewEmailSenderWithLocal(log.Addresser)
