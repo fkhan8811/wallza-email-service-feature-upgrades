@@ -142,7 +142,7 @@ type AbnormalRecipient struct {
 	Description string `json:"description" dc:"Description"`
 	Count       int    `json:"count"       dc:"Count"`
 	AddType     int    `json:"add_type"    dc:"Add Type"`
-	// AddType 1: Manually added, 2: Automatically scanned, 3: Manually scanned
+	// AddType 1: Manually added, 2: Automatic bounce statistics, 3: Manual MX scan, 4: Provider abuse complaint
 }
 
 type MailTemplateContext struct {
