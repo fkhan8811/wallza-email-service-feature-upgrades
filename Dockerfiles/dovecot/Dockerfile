@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgra
 	dovecot-lmtpd \
 	dovecot-pgsql \
 	dovecot-sieve \
+	dovecot-managesieved \
 	dovecot-ldap \
 	sasl2-bin \
 	libsasl2-modules \
