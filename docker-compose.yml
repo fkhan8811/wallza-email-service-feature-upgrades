@@ -62,7 +62,10 @@ services:
             - rspamd
 
     dovecot-billionmail:
-      image: billionmail/dovecot:1.6
+      image: wallza/billionmail-dovecot:1.6
+      build:
+        context: ./Dockerfiles/dovecot
+        dockerfile: Dockerfile
       hostname: dovecot
       depends_on:
         - pgsql-billionmail
