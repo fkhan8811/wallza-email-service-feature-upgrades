@@ -41,6 +41,13 @@ WEB_BASE_PATH=
 # Keep empty to disable aaPanel SSO.
 AAPANEL_SSO_SECRET=
 
+# Optional WallzaOS server-to-server webhook integration.
+# Use an HTTPS endpoint and a random secret of at least 32 characters.
+WALLZAOS_WEBHOOK_URL=
+WALLZAOS_WEBHOOK_SECRET=
+# Set true only for local HTTP testing against localhost.
+WALLZAOS_WEBHOOK_ALLOW_LOCAL_HTTP=false
+
 # You can use this script to set the time zone for your container.
 # See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for a list of timezones"
 # echo -e "Use a column named "TZ identifier" + note the column named "Notes""
