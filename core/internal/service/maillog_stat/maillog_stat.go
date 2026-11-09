@@ -3,7 +3,9 @@ package maillog_stat
 import (
 	"billionmail-core/internal/consts"
 	"billionmail-core/internal/service/public"
+	"billionmail-core/internal/service/wallzaos"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"github.com/gogf/gf/os/gfsnotify"
@@ -721,6 +723,23 @@ func (ms *MaillogStat) AnalysisAndSaveToDatabase(ctx context.Context) error {
 		}).Batch(5000).Save(sendRecords)
 		if err != nil {
 			g.Log().Error(context.Background(), err.Error())
+		} else {
+			// The stable id makes log reprocessing idempotent at the webhook outbox.
+			for _, record := range sendRecords {
+				id := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s|%d|%s", record.PostfixMessageID, record.LogTimeMillis, record.Status))))
+				wallzaos.EnqueueOnce(ctx, id, "email.delivery.updated", map[string]interface{}{
+					"postfix_message_id": record.PostfixMessageID,
+					"recipient":          record.Recipient,
+					"provider":           record.MailProvider,
+					"status":             record.Status,
+					"delay_seconds":      record.Delay,
+					"delays":             record.Delays,
+					"dsn":                record.Dsn,
+					"relay":              record.Relay,
+					"description":        record.Description,
+					"occurred_at":        time.UnixMilli(record.LogTimeMillis).UTC().Format(time.RFC3339Nano),
+				})
+			}
 		}
 	}
 
