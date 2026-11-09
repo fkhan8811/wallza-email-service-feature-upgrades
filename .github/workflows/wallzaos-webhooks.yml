@@ -15,6 +15,7 @@ on:
       - "core/frontend/src/router/modules/settings.test.ts"
       - "core/frontend/package.json"
       - "core/frontend/pnpm-lock.yaml"
+      - "Dockerfiles/dovecot/**"
       - "conf/dovecot/dovecot.conf"
       - "conf/dovecot/conf.d/10-master.conf"
       - "conf/webmail/custom.inc.php"
