@@ -120,10 +120,14 @@ func EnqueueOnce(ctx context.Context, eventID, eventType string, data map[string
 	}
 	_, enabled, err := loadWebhookConfig()
 	if err != nil {
-		g.Log().Warning(ctx, "WallzaOS webhook is not configured correctly: ", err)
-		return
-	}
-	if !enabled {
+		g.Log().Warning(ctx, "WallzaOS webhook is not configured correctly; preserving event until configuration is fixed: ", err)
+		// Do not lose mail events because a partially configured endpoint is invalid.
+		// Keep them in the outbox so the dispatcher can deliver them after correction.
+		if strings.TrimSpace(os.Getenv("WALLZAOS_WEBHOOK_URL")) == "" &&
+			strings.TrimSpace(os.Getenv("WALLZAOS_WEBHOOK_SECRET")) == "" {
+			return
+		}
+	} else if !enabled {
 		return
 	}
 
