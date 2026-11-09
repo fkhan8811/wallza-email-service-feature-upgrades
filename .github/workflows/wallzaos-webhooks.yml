@@ -5,6 +5,10 @@ on:
     paths:
       - "core/internal/service/wallzaos/**"
       - "core/internal/service/database_initialization/wallzaos_webhooks.go"
+      - "core/internal/service/maillog_stat/**"
+      - "core/internal/service/timers/timers.go"
+      - "docker-compose.yml"
+      - "env_init"
       - ".github/workflows/wallzaos-webhooks.yml"
   push:
     branches:
@@ -12,6 +16,10 @@ on:
     paths:
       - "core/internal/service/wallzaos/**"
       - "core/internal/service/database_initialization/wallzaos_webhooks.go"
+      - "core/internal/service/maillog_stat/**"
+      - "core/internal/service/timers/timers.go"
+      - "docker-compose.yml"
+      - "env_init"
       - ".github/workflows/wallzaos-webhooks.yml"
 
 jobs:
@@ -29,5 +37,14 @@ jobs:
           go-version-file: core/go.mod
           cache: true
           cache-dependency-path: core/go.sum
+      - name: Check Go formatting
+        run: |
+          files="$(gofmt -l internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go)"
+          if [ -n "$files" ]; then
+            echo "$files"
+            exit 1
+          fi
       - name: Run WallzaOS webhook unit tests
         run: go test ./internal/service/wallzaos -count=1
+      - name: Compile all integration touchpoints
+        run: go test ./internal/service/wallzaos ./internal/service/maillog_stat ./internal/service/timers ./internal/service/database_initialization -run '^$' -count=1
