@@ -710,7 +710,7 @@ func (e *TaskExecutor) getNextRecipientBatch(ctx context.Context, taskId, lastId
 
 // processRecipientBatch
 // filterAbnormalRecipients applies the suppression list again at execution time.
- // This catches complaints received after a campaign's recipient list was imported.
+// This catches complaints received after a campaign's recipient list was imported.
 func filterAbnormalRecipients(ctx context.Context, recipients []*entity.RecipientInfo) ([]*entity.RecipientInfo, error) {
 	if len(recipients) == 0 {
 		return recipients, nil
