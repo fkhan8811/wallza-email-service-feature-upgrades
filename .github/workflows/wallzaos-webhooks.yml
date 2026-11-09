@@ -84,7 +84,7 @@ jobs:
       - name: Build and inspect the Dovecot ManageSieve image
         run: |
           docker build -t wallza-dovecot-ci ../Dockerfiles/dovecot
-          docker run --rm --entrypoint sh wallza-dovecot-ci -c 'dpkg-query -W -f="${Status}" dovecot-managesieved | grep -q "install ok installed"'
+          docker run --rm --entrypoint sh wallza-dovecot-ci -c 'dpkg -s dovecot-managesieved >/dev/null'
       - name: Run WallzaOS webhook unit tests
         run: go test ./internal/service/wallzaos -count=1
       - name: Compile all integration touchpoints
