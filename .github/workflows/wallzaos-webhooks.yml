@@ -1,0 +1,33 @@
+name: WallzaOS webhook tests
+
+on:
+  pull_request:
+    paths:
+      - "core/internal/service/wallzaos/**"
+      - "core/internal/service/database_initialization/wallzaos_webhooks.go"
+      - ".github/workflows/wallzaos-webhooks.yml"
+  push:
+    branches:
+      - "wallza/**"
+    paths:
+      - "core/internal/service/wallzaos/**"
+      - "core/internal/service/database_initialization/wallzaos_webhooks.go"
+      - ".github/workflows/wallzaos-webhooks.yml"
+
+jobs:
+  webhook-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: core
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: core/go.mod
+          cache: true
+          cache-dependency-path: core/go.sum
+      - name: Run WallzaOS webhook unit tests
+        run: go test ./internal/service/wallzaos -count=1
