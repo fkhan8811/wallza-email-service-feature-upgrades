@@ -138,15 +138,15 @@ func EnqueueOnce(ctx context.Context, eventID, eventType string, data map[string
 
 	now := time.Now().Unix()
 	_, err = g.DB().Model(deliveryTable).Ctx(ctx).InsertIgnore(g.Map{
-		"event_id":         eventID,
-		"event_type":       eventType,
-		"payload":          string(payload),
-		"status":           "pending",
-		"attempts":         0,
-		"next_attempt_at":  now,
-		"created_at":       now,
-		"delivered_at":     0,
-		"last_error":       "",
+		"event_id":        eventID,
+		"event_type":      eventType,
+		"payload":         string(payload),
+		"status":          "pending",
+		"attempts":        0,
+		"next_attempt_at": now,
+		"created_at":      now,
+		"delivered_at":    0,
+		"last_error":      "",
 	})
 	if err != nil {
 		g.Log().Warning(ctx, "Could not queue WallzaOS webhook event: ", err)
