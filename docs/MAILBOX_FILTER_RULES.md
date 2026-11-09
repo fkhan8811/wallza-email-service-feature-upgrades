@@ -6,6 +6,8 @@ Roundcube so each mailbox owner can create and manage server-side filters.
 
 ## What is enabled
 
+The Dovecot image now installs Debian's `dovecot-managesieved` package in addition to the existing `dovecot-sieve` package. The compose service builds this fork's Dovecot image as `wallza/billionmail-dovecot:1.6`.
+
 - Dovecot ManageSieve on the standard internal port 4190.
 - Roundcube's built-in `managesieve` plugin.
 - Roundcube connects to `tls://dovecot:4190`, which negotiates STARTTLS.
@@ -25,6 +27,17 @@ not publish this port directly to the public internet.
 Mailbox users manage filters inside Roundcube Webmail. This reuses the
 existing mail client; it does not add another WallzaOS sidebar page or another
 mail server.
+
+## Rebuild and deploy
+
+After updating the fork, rebuild the Dovecot image and recreate Dovecot and Roundcube:
+
+```bash
+docker compose build dovecot-billionmail
+docker compose up -d --no-deps dovecot-billionmail webmail-billionmail
+```
+
+This does not publish port 4190 on the host. Roundcube reaches it over the private Docker network.
 
 ## Validation
 
