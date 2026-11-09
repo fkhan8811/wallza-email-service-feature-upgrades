@@ -9,6 +9,8 @@ on:
       - "core/internal/service/abnormal_recipient/**"
       - "core/internal/service/batch_mail/batch_mail.go"
       - "core/internal/service/batch_mail/task_executor.go"
+      - "core/internal/service/batch_mail/api_mail_send.go"
+      - "core/internal/service/batch_mail/api_mail_suppression_test.go"
       - "core/internal/service/middlewares/rbac.go"
       - "docs/PROVIDER_COMPLAINT_INGESTION.md"
       - "core/internal/service/maillog_stat/**"
@@ -77,7 +79,7 @@ jobs:
           cache-dependency-path: core/go.sum
       - name: Check Go formatting
         run: |
-          gofmt -d internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/database_initialization/maillog_stat.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go internal/service/abnormal_recipient/complaint.go internal/service/abnormal_recipient/complaint_test.go internal/service/batch_mail/batch_mail.go internal/service/batch_mail/task_executor.go internal/service/middlewares/rbac.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/v1/provider_complaints.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_provider_complaints.go
+          gofmt -d internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/database_initialization/maillog_stat.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go internal/service/abnormal_recipient/complaint.go internal/service/abnormal_recipient/complaint_test.go internal/service/batch_mail/batch_mail.go internal/service/batch_mail/task_executor.go internal/service/batch_mail/api_mail_send.go internal/service/batch_mail/api_mail_suppression_test.go internal/service/middlewares/rbac.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/v1/provider_complaints.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_provider_complaints.go
           files="$(gofmt -l internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/database_initialization/maillog_stat.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go internal/service/abnormal_recipient/complaint.go internal/service/abnormal_recipient/complaint_test.go internal/service/batch_mail/batch_mail.go internal/service/batch_mail/task_executor.go internal/service/middlewares/rbac.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/v1/provider_complaints.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_provider_complaints.go)"
           if [ -n "$files" ]; then
             echo "$files"
@@ -90,6 +92,7 @@ jobs:
           grep -Fq 'RecordComplaint(ctx' internal/controller/mail_services/mail_services_v1_provider_complaints.go
           grep -Fq 'filterAbnormalRecipients(ctx, recipients)' internal/service/batch_mail/task_executor.go
           grep -Fq 'count >= ?' internal/service/batch_mail/task_executor.go
+          grep -Fq 'ensureRecipientNotHardSuppressed(ctx, log.Recipient)' internal/service/batch_mail/api_mail_send.go
       - name: Validate ManageSieve configuration and network boundary
         run: |
           grep -Eq '^protocols = .*sieve' ../conf/dovecot/dovecot.conf
@@ -105,8 +108,10 @@ jobs:
           docker build -t wallza-dovecot-ci ../Dockerfiles/dovecot
           docker run --rm --entrypoint sh wallza-dovecot-ci -c 'dpkg -s dovecot-managesieved >/dev/null'
           docker run --rm -v "$GITHUB_WORKSPACE/conf/dovecot:/etc/dovecot:ro" --entrypoint doveconf wallza-dovecot-ci -n -c /etc/dovecot/dovecot.conf
-      - name: Run webhook and complaint-ingestion unit tests
-        run: go test ./internal/service/wallzaos ./internal/service/abnormal_recipient -count=1
+      - name: Run webhook, complaint-ingestion and transactional suppression unit tests
+        run: |
+          go test ./internal/service/wallzaos ./internal/service/abnormal_recipient -count=1
+          go test ./internal/service/batch_mail -run TestNormalizeSuppressionRecipient -count=1
       - name: Compile all integration touchpoints
         run: go test ./internal/service/wallzaos ./internal/service/maillog_stat ./internal/service/timers ./internal/service/database_initialization ./internal/service/abnormal_recipient ./internal/service/batch_mail ./internal/service/middlewares ./api/mail_services/... ./internal/controller/mail_services -run DO_NOT_RUN -count=1
 
