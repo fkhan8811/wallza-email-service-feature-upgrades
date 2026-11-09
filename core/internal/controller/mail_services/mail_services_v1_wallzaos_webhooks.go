@@ -4,6 +4,7 @@ import (
 	"billionmail-core/api/mail_services/v1"
 	"billionmail-core/internal/service/public"
 	"context"
+	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -59,42 +60,45 @@ func (c *ControllerV1) GetWallzaOSWebhookList(ctx context.Context, req *v1.GetWa
 
 func (c *ControllerV1) GetWallzaOSWebhookDetail(ctx context.Context, req *v1.GetWallzaOSWebhookDetailReq) (res *v1.GetWallzaOSWebhookDetailRes, err error) {
 	res = &v1.GetWallzaOSWebhookDetailRes{}
-	var delivery v1.WallzaOSWebhookDelivery
-	var payload string
-
-	err = g.DB().Model(wallzaOSWebhookDeliveryTable).Ctx(ctx).
-		Fields("event_id, event_type, status, attempts, next_attempt_at, created_at, delivered_at, last_error, payload").
-		Where("event_id", req.EventID).
-		Scan(&struct {
-			v1.WallzaOSWebhookDelivery
-			Payload *string `json:"payload"`
-		}{
-			WallzaOSWebhookDelivery: delivery,
-		})
+	model := g.DB().Model(wallzaOSWebhookDeliveryTable).Ctx(ctx).Where("event_id", req.EventID)
+	count, err := model.Count()
 	if err != nil {
-		res.SetError(gerror.New(public.LangCtx(ctx, "Failed to get WallzaOS webhook delivery: {}", err.Error())))
+		res.SetError(gerror.New(public.LangCtx(ctx, "Failed to find WallzaOS webhook delivery: {}", err.Error())))
+		return res, nil
+	}
+	if count == 0 {
+		res.SetError(gerror.New(public.LangCtx(ctx, "WallzaOS webhook delivery not found")))
 		return res, nil
 	}
 
 	var detail struct {
-		v1.WallzaOSWebhookDelivery
-		Payload *string `json:"payload"`
+		EventID       string `json:"event_id"`
+		EventType     string `json:"event_type"`
+		Status        string `json:"status"`
+		Attempts      int    `json:"attempts"`
+		NextAttemptAt int64  `json:"next_attempt_at"`
+		CreatedAt     int64  `json:"created_at"`
+		DeliveredAt   int64  `json:"delivered_at"`
+		LastError     string `json:"last_error"`
+		Payload       string `json:"payload"`
 	}
-	err = g.DB().Model(wallzaOSWebhookDeliveryTable).Ctx(ctx).
-		Fields("event_id, event_type, status, attempts, next_attempt_at, created_at, delivered_at, last_error, payload").
-		Where("event_id", req.EventID).
-		Scan(&detail)
+	err = model.Fields("event_id, event_type, status, attempts, next_attempt_at, created_at, delivered_at, last_error, payload").Scan(&detail)
 	if err != nil {
-		res.SetError(gerror.New(public.LangCtx(ctx, "Failed to get WallzaOS webhook delivery: {}", err.Error())))
+		res.SetError(gerror.New(public.LangCtx(ctx, "Failed to read WallzaOS webhook delivery: {}", err.Error())))
 		return res, nil
 	}
-	if detail.Payload == nil {
-		res.SetError(gerror.New(public.LangCtx(ctx, "WallzaOS webhook delivery not found")))
-		return res, nil
+
+	res.Data.Delivery = v1.WallzaOSWebhookDelivery{
+		EventID:       detail.EventID,
+		EventType:     detail.EventType,
+		Status:        detail.Status,
+		Attempts:      detail.Attempts,
+		NextAttemptAt: detail.NextAttemptAt,
+		CreatedAt:     detail.CreatedAt,
+		DeliveredAt:   detail.DeliveredAt,
+		LastError:     detail.LastError,
 	}
-	res.Data.Delivery = detail.WallzaOSWebhookDelivery
-	payload = *detail.Payload
-	res.Data.Payload = payload
+	res.Data.Payload = detail.Payload
 	res.SetSuccess(public.LangCtx(ctx, "Get WallzaOS webhook delivery successfully"))
 	return res, nil
 }
@@ -107,7 +111,7 @@ func (c *ControllerV1) RetryWallzaOSWebhook(ctx context.Context, req *v1.RetryWa
 		Update(g.Map{
 			"status":                "pending",
 			"attempts":              0,
-			"next_attempt_at":       0,
+			"next_attempt_at":       time.Now().Unix(),
 			"processing_started_at": 0,
 			"last_error":            "",
 		})
