@@ -12,7 +12,8 @@ connects a verified provider complaint to both existing mechanisms.
 The endpoint is behind BillionMail's existing API JWT and RBAC middleware.
 It is not an anonymous provider webhook. WallzaOS should first validate the
 provider's original webhook signature (for example, SNS, SendGrid or Mailgun),
-then call this endpoint using its authorised BillionMail API token.
+then call this endpoint using its authorised BillionMail API token with the
+mail-services create permission (or an administrator account).
 
 Example request:
 
@@ -28,8 +29,8 @@ Example request:
 Fields:
 
 - `provider_event_id`: required stable event ID supplied by the provider.
-- `provider`: required lowercase provider slug (letters, numbers, dot,
-  underscore and hyphen).
+- `provider`: required provider slug (letters, numbers, dot, underscore and
+  hyphen).
 - `recipient`: required email address. It is normalised to lowercase.
 - `postfix_message_id`: optional local Postfix queue ID. When supplied, it
   must match the recipient in BillionMail's send log. When omitted, the most
@@ -43,8 +44,13 @@ Fields:
 - Reuse of the same provider event ID for a different recipient is rejected.
 - The recipient is immediately upserted into `abnormal_recipient` with
   `count >= 3` and `add_type = 4`.
-- BillionMail's existing campaign creator excludes abnormal recipients with
+- BillionMail's campaign creator excludes abnormal recipients with
   `count >= 3`, so future campaigns omit the complained-about address.
+- The campaign task executor rechecks the suppression list before each fetched
+  batch. Addresses newly suppressed after a campaign was created are marked
+  processed-with-failure (`is_sent = 3`) rather than sent.
+- A batch that has already passed its suppression check and handed a message
+  to the SMTP transport cannot be retroactively cancelled.
 - The complaint is recorded even when no matching local send can be linked.
 
 ## Trust boundary
@@ -65,5 +71,7 @@ configuration, not in the browser.
    created.
 5. Reuse that provider event ID with a different recipient; confirm the API
    rejects it.
-6. Create a campaign containing that recipient; confirm the campaign task
-   creator filters the address out.
+6. Create a campaign containing that recipient; confirm the task creator
+   filters the address out.
+7. Add an address to an already created campaign before a later batch is
+   fetched; confirm the executor suppresses it before SMTP handoff.
