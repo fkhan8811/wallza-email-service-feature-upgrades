@@ -83,6 +83,14 @@ func Start(ctx context.Context) (err error) {
 		wallzaos.DispatchPending(ctx, 5)
 	})
 
+	// Retain webhook delivery history for a bounded period; never prune pending work.
+	gtimer.AddOnce(1*time.Minute, func() {
+		wallzaos.PruneTerminalDeliveries(ctx)
+	})
+	gtimer.Add(24*time.Hour, func() {
+		wallzaos.PruneTerminalDeliveries(ctx)
+	})
+
 	g.Log().Debug(ctx, "Start timers complete")
 
 	// Collect mail-sent total and mail-relay total
