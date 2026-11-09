@@ -8,12 +8,6 @@ import (
 	"testing"
 )
 
-type doerFunc func(*http.Request) (*http.Response, error)
-
-func (f doerFunc) Do(req *http.Request) (*http.Response, error) {
-	return f(req)
-}
-
 func TestSignatureIsStableAndPrefixed(t *testing.T) {
 	got := signature("a-secret-with-enough-entropy", []byte(`{"hello":"world"}`))
 	if !strings.HasPrefix(got, "sha256=") {
@@ -68,5 +62,51 @@ func TestSendWebhookReturnsNon2xxAsError(t *testing.T) {
 	}, webhookDelivery{EventID: "evt-2", EventType: "email.clicked", Payload: `{}`})
 	if err == nil || !strings.Contains(err.Error(), "502") {
 		t.Fatalf("expected HTTP 502 error, got %v", err)
+	}
+}
+
+func TestLoadWebhookConfigRequiresHTTPS(t *testing.T) {
+	t.Setenv("WALLZAOS_WEBHOOK_URL", "http://example.com/events")
+	t.Setenv("WALLZAOS_WEBHOOK_SECRET", "wallza-test-secret-with-more-than-32-characters")
+	t.Setenv("WALLZAOS_WEBHOOK_ALLOW_LOCAL_HTTP", "true")
+
+	_, enabled, err := loadWebhookConfig()
+	if err == nil || enabled {
+		t.Fatalf("expected non-local HTTP URL to be rejected, enabled=%v err=%v", enabled, err)
+	}
+}
+
+func TestLoadWebhookConfigAllowsOptedInLocalHTTP(t *testing.T) {
+	t.Setenv("WALLZAOS_WEBHOOK_URL", "http://127.0.0.1:8080/events")
+	t.Setenv("WALLZAOS_WEBHOOK_SECRET", "wallza-test-secret-with-more-than-32-characters")
+	t.Setenv("WALLZAOS_WEBHOOK_ALLOW_LOCAL_HTTP", "true")
+
+	cfg, enabled, err := loadWebhookConfig()
+	if err != nil || !enabled || cfg.URL == "" {
+		t.Fatalf("expected localhost HTTP config to be enabled, config=%+v enabled=%v err=%v", cfg, enabled, err)
+	}
+}
+
+func TestSendWebhookDoesNotFollowRedirects(t *testing.T) {
+	var redirected bool
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		redirected = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer target.Close()
+
+	redirect := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL, http.StatusFound)
+	}))
+	defer redirect.Close()
+
+	err := sendWebhook(t.Context(), webhookHTTP, webhookConfig{
+		URL: redirect.URL, Secret: "wallza-test-secret-with-more-than-32-characters",
+	}, webhookDelivery{EventID: "evt-redirect", EventType: "email.opened", Payload: `{}`})
+	if err == nil || !strings.Contains(err.Error(), "302") {
+		t.Fatalf("expected HTTP 302 error, got %v", err)
+	}
+	if redirected {
+		t.Fatal("webhook client must not forward signed event bodies to redirect targets")
 	}
 }
