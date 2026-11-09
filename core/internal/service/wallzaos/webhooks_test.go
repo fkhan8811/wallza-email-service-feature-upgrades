@@ -111,3 +111,28 @@ func TestSendWebhookDoesNotFollowRedirects(t *testing.T) {
 		t.Fatal("webhook client must not forward signed event bodies to redirect targets")
 	}
 }
+
+func TestConfiguredRetentionDaysDefaultsToThirty(t *testing.T) {
+	t.Setenv("WALLZAOS_WEBHOOK_RETENTION_DAYS", "")
+	if got := ConfiguredRetentionDays(); got != 30 {
+		t.Fatalf("default retention = %d, want 30", got)
+	}
+}
+
+func TestConfiguredRetentionDaysAcceptsConfiguredRange(t *testing.T) {
+	t.Setenv("WALLZAOS_WEBHOOK_RETENTION_DAYS", "90")
+	if got := ConfiguredRetentionDays(); got != 90 {
+		t.Fatalf("configured retention = %d, want 90", got)
+	}
+}
+
+func TestConfiguredRetentionDaysRejectsOutOfRange(t *testing.T) {
+	for _, value := range []string{"0", "6", "366", "invalid"} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("WALLZAOS_WEBHOOK_RETENTION_DAYS", value)
+			if got := ConfiguredRetentionDays(); got != 30 {
+				t.Fatalf("retention for %q = %d, want default 30", value, got)
+			}
+		})
+	}
+}
