@@ -15,6 +15,10 @@ on:
       - "core/frontend/src/router/modules/settings.test.ts"
       - "core/frontend/package.json"
       - "core/frontend/pnpm-lock.yaml"
+      - "conf/dovecot/dovecot.conf"
+      - "conf/dovecot/conf.d/10-master.conf"
+      - "conf/webmail/custom.inc.php"
+      - "docs/MAILBOX_FILTER_RULES.md"
       - "docker-compose.yml"
       - "env_init"
       - ".github/workflows/wallzaos-webhooks.yml"
@@ -59,6 +63,16 @@ jobs:
           files="$(gofmt -l internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go)"
           if [ -n "$files" ]; then
             echo "$files"
+            exit 1
+          fi
+      - name: Validate ManageSieve configuration and network boundary
+        run: |
+          grep -Eq '^protocols = .*sieve' ../conf/dovecot/dovecot.conf
+          grep -Fq 'port = 4190' ../conf/dovecot/conf.d/10-master.conf
+          grep -Fq "'managesieve'" ../conf/webmail/custom.inc.php
+          grep -Fq "tls://dovecot:4190" ../conf/webmail/custom.inc.php
+          if grep -Eq '^[[:space:]]*-[[:space:]]*"?[^"]*4190:4190' ../docker-compose.yml; then
+            echo "ManageSieve must remain internal to the Docker network"
             exit 1
           fi
       - name: Run WallzaOS webhook unit tests
