@@ -62,8 +62,10 @@ time and deduplicate by `X-WallzaOS-Delivery`.
 ## Retry behavior
 
 Events are persisted in `bm_wallzaos_webhook_deliveries`. A background timer
-claims pending rows, sends them with a short timeout and retries failures using
-increasing delays. After six unsuccessful attempts an event is marked
+claims pending rows, sends them with a short timeout and retries failures after
+30 seconds, 2 minutes, 10 minutes, 30 minutes and 2 hours. Claims left in
+processing for more than two minutes are recovered after a restart. After six
+unsuccessful attempts an event is marked
 `failed`; successful events are marked `delivered`. The event queue is not
 deleted when an endpoint is unavailable.
 
