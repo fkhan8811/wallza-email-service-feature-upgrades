@@ -9,6 +9,7 @@ on:
       - "core/internal/service/abnormal_recipient/**"
       - "core/internal/service/batch_mail/batch_mail.go"
       - "core/internal/service/batch_mail/task_executor.go"
+      - "core/internal/service/middlewares/rbac.go"
       - "docs/PROVIDER_COMPLAINT_INGESTION.md"
       - "core/internal/service/maillog_stat/**"
       - "core/internal/service/timers/timers.go"
@@ -38,6 +39,7 @@ on:
       - "core/internal/service/abnormal_recipient/**"
       - "core/internal/service/batch_mail/batch_mail.go"
       - "core/internal/service/batch_mail/task_executor.go"
+      - "core/internal/service/middlewares/rbac.go"
       - "docs/PROVIDER_COMPLAINT_INGESTION.md"
       - "core/internal/service/maillog_stat/**"
       - "core/internal/service/timers/timers.go"
@@ -75,8 +77,8 @@ jobs:
           cache-dependency-path: core/go.sum
       - name: Check Go formatting
         run: |
-          gofmt -d internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go internal/service/abnormal_recipient internal/service/batch_mail/batch_mail.go internal/service/batch_mail/task_executor.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/v1/provider_complaints.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_provider_complaints.go
-          files="$(gofmt -l internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go internal/service/abnormal_recipient internal/service/batch_mail/batch_mail.go internal/service/batch_mail/task_executor.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/v1/provider_complaints.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_provider_complaints.go)"
+          gofmt -d internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go internal/service/abnormal_recipient internal/service/batch_mail/batch_mail.go internal/service/batch_mail/task_executor.go internal/service/middlewares/rbac.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/v1/provider_complaints.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_provider_complaints.go
+          files="$(gofmt -l internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go internal/service/abnormal_recipient internal/service/batch_mail/batch_mail.go internal/service/batch_mail/task_executor.go internal/service/middlewares/rbac.go api/mail_services/v1/wallzaos_webhooks.go api/mail_services/v1/provider_complaints.go api/mail_services/mail_services.go internal/controller/mail_services/mail_services_v1_wallzaos_webhooks.go internal/controller/mail_services/mail_services_v1_provider_complaints.go)"
           if [ -n "$files" ]; then
             echo "$files"
             exit 1
@@ -106,7 +108,7 @@ jobs:
       - name: Run webhook and complaint-ingestion unit tests
         run: go test ./internal/service/wallzaos ./internal/service/abnormal_recipient -count=1
       - name: Compile all integration touchpoints
-        run: go test ./internal/service/wallzaos ./internal/service/maillog_stat ./internal/service/timers ./internal/service/database_initialization ./internal/service/abnormal_recipient ./internal/service/batch_mail ./api/mail_services/... ./internal/controller/mail_services -run DO_NOT_RUN -count=1
+        run: go test ./internal/service/wallzaos ./internal/service/maillog_stat ./internal/service/timers ./internal/service/database_initialization ./internal/service/abnormal_recipient ./internal/service/batch_mail ./internal/service/middlewares ./api/mail_services/... ./internal/controller/mail_services -run DO_NOT_RUN -count=1
 
   frontend-settings:
     runs-on: ubuntu-latest
