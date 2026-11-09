@@ -721,13 +721,16 @@ func filterAbnormalRecipients(ctx context.Context, recipients []*entity.Recipien
 		emails = append(emails, strings.ToLower(strings.TrimSpace(recipient.Recipient)))
 	}
 
-	var blocked []string
-	err := g.DB().Model("abnormal_recipient").Ctx(ctx).
+	arr, err := g.DB().Model("abnormal_recipient").Ctx(ctx).
 		Where("count >= ?", 3).
 		Where("LOWER(recipient) IN (?)", emails).
-		Array("recipient", &blocked)
+		Array("recipient")
 	if err != nil {
 		return nil, fmt.Errorf("failed to check recipient suppression list: %w", err)
+	}
+	blocked := make([]string, 0, len(arr))
+	for _, item := range arr {
+		blocked = append(blocked, item.String())
 	}
 	if len(blocked) == 0 {
 		return recipients, nil
