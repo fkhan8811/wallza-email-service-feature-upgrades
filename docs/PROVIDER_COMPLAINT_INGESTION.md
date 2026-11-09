@@ -49,6 +49,9 @@ Fields:
 - The campaign task executor rechecks the suppression list before each fetched
   batch. Addresses newly suppressed after a campaign was created are marked
   processed-with-failure (`is_sent = 3`) rather than sent.
+- This integration covers marketing campaign recipient batches. It does not
+  block direct transactional sends through the separate API-mail send endpoint;
+  WallzaOS should apply the same hard-suppression policy before using that path.
 - A batch that has already passed its suppression check and handed a message
   to the SMTP transport cannot be retroactively cancelled.
 - The complaint is recorded even when no matching local send can be linked.
