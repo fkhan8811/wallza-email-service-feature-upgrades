@@ -223,8 +223,8 @@ func DispatchPending(ctx context.Context, limit int) {
 			_, updateErr := g.DB().Model(deliveryTable).Ctx(ctx).
 				Where("event_id", row.EventID).
 				Update(g.Map{
-					"status":       "delivered",
-					"attempts":     attempts,
+					"status":                "delivered",
+					"attempts":              attempts,
 					"delivered_at":          time.Now().Unix(),
 					"processing_started_at": 0,
 					"last_error":            "",
@@ -246,9 +246,9 @@ func DispatchPending(ctx context.Context, limit int) {
 		_, updateErr := g.DB().Model(deliveryTable).Ctx(ctx).
 			Where("event_id", row.EventID).
 			Update(g.Map{
-				"status":          nextStatus,
-				"attempts":        attempts,
-				"next_attempt_at": nextAttempt,
+				"status":                nextStatus,
+				"attempts":              attempts,
+				"next_attempt_at":       nextAttempt,
 				"processing_started_at": 0,
 				"last_error":            truncateError(sendErr.Error(), 1000),
 			})
