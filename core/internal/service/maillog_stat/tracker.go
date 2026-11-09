@@ -3,6 +3,7 @@ package maillog_stat
 import (
 	"billionmail-core/internal/model/entity"
 	"billionmail-core/internal/service/contact_activity"
+	"billionmail-core/internal/service/wallzaos"
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -59,6 +60,14 @@ func CampaignEventHandler(r *ghttp.Request, encStr string) {
 
 		if err != nil {
 			g.Log().Error(ctx, err)
+		} else {
+			wallzaos.Enqueue(ctx, "email.opened", map[string]interface{}{
+				"campaign_id":        data.CampaignId,
+				"recipient":          data.Recipient,
+				"message_id":         data.MessageId,
+				"postfix_message_id": postfixMessageID,
+				"occurred_at":        time.UnixMilli(curTimeMillis).UTC().Format(time.RFC3339Nano),
+			})
 		}
 
 		// Update contact activity when email is opened
@@ -103,6 +112,19 @@ func CampaignEventHandler(r *ghttp.Request, encStr string) {
 
 		if err != nil {
 			g.Log().Error(ctx, err)
+		} else {
+			linkHost := ""
+			if parsed, parseErr := url.Parse(data.Url); parseErr == nil {
+				linkHost = parsed.Hostname()
+			}
+			wallzaos.Enqueue(ctx, "email.clicked", map[string]interface{}{
+				"campaign_id":        data.CampaignId,
+				"recipient":          data.Recipient,
+				"message_id":         data.MessageId,
+				"postfix_message_id": postfixMessageID,
+				"link_host":          linkHost,
+				"occurred_at":        time.UnixMilli(curTimeMillis).UTC().Format(time.RFC3339Nano),
+			})
 		}
 		g.Log().Debug(ctx, "记录点击 !!! Click event data: ", data.Recipient)
 
