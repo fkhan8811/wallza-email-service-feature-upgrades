@@ -136,3 +136,19 @@ func TestConfiguredRetentionDaysRejectsOutOfRange(t *testing.T) {
 		})
 	}
 }
+
+func TestWebhookConfigPresentDetectsPartialConfiguration(t *testing.T) {
+	t.Setenv("WALLZAOS_WEBHOOK_URL", "https://wallza.example/events")
+	t.Setenv("WALLZAOS_WEBHOOK_SECRET", "")
+	if !webhookConfigPresent() {
+		t.Fatal("partial configuration must keep events in the outbox")
+	}
+}
+
+func TestWebhookConfigPresentIsFalseWhenDisabled(t *testing.T) {
+	t.Setenv("WALLZAOS_WEBHOOK_URL", "")
+	t.Setenv("WALLZAOS_WEBHOOK_SECRET", "")
+	if webhookConfigPresent() {
+		t.Fatal("webhook configuration should be absent when both settings are empty")
+	}
+}
