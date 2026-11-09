@@ -15,6 +15,7 @@ import (
 	"billionmail-core/internal/service/relay"
 	"billionmail-core/internal/service/video_gen"
 	"billionmail-core/internal/service/warmup"
+	"billionmail-core/internal/service/wallzaos"
 	"context"
 	"time"
 
@@ -75,6 +76,11 @@ func Start(ctx context.Context) (err error) {
 	})
 	gtimer.Add(5*time.Minute, func() {
 		domains.UpdateBaseURL(ctx)
+	})
+
+	// Deliver signed WallzaOS events from the persistent outbox.
+	gtimer.Add(10*time.Second, func() {
+		wallzaos.DispatchPending(ctx, 5)
 	})
 
 	g.Log().Debug(ctx, "Start timers complete")
