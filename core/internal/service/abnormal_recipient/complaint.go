@@ -93,8 +93,8 @@ func RecordComplaint(ctx context.Context, input ComplaintInput) error {
 		}
 
 		inserted, err := tx.Model("mailstat_complaints").Data(g.Map{
-			"provider_event_id": input.EventID,
-			"provider":          input.Provider,
+			"provider_event_id":  input.EventID,
+			"provider":           input.Provider,
 			"postfix_message_id": postfixMessageID,
 			"recipient":          input.Recipient,
 			"log_time_millis":    time.Now().UnixMilli(),
