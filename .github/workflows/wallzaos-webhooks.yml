@@ -39,6 +39,7 @@ jobs:
           cache-dependency-path: core/go.sum
       - name: Check Go formatting
         run: |
+          gofmt -d internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go
           files="$(gofmt -l internal/service/wallzaos internal/service/database_initialization/wallzaos_webhooks.go internal/service/maillog_stat/maillog_stat.go internal/service/maillog_stat/tracker.go internal/service/timers/timers.go)"
           if [ -n "$files" ]; then
             echo "$files"
