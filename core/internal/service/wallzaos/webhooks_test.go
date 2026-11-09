@@ -1,6 +1,7 @@
 package wallzaos
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -42,7 +43,7 @@ func TestSendWebhookSignsExactPayload(t *testing.T) {
 	}))
 	defer server.Close()
 
-	err := sendWebhook(t.Context(), server.Client(), webhookConfig{URL: server.URL, Secret: secret}, webhookDelivery{
+	err := sendWebhook(context.Background(), server.Client(), webhookConfig{URL: server.URL, Secret: secret}, webhookDelivery{
 		EventID: "evt-1", EventType: "email.opened", Payload: payload,
 	})
 	if err != nil {
@@ -57,7 +58,7 @@ func TestSendWebhookReturnsNon2xxAsError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	err := sendWebhook(t.Context(), server.Client(), webhookConfig{
+	err := sendWebhook(context.Background(), server.Client(), webhookConfig{
 		URL: server.URL, Secret: "wallza-test-secret-with-more-than-32-characters",
 	}, webhookDelivery{EventID: "evt-2", EventType: "email.clicked", Payload: `{}`})
 	if err == nil || !strings.Contains(err.Error(), "502") {
@@ -100,7 +101,7 @@ func TestSendWebhookDoesNotFollowRedirects(t *testing.T) {
 	}))
 	defer redirect.Close()
 
-	err := sendWebhook(t.Context(), webhookHTTP, webhookConfig{
+	err := sendWebhook(context.Background(), webhookHTTP, webhookConfig{
 		URL: redirect.URL, Secret: "wallza-test-secret-with-more-than-32-characters",
 	}, webhookDelivery{EventID: "evt-redirect", EventType: "email.opened", Payload: `{}`})
 	if err == nil || !strings.Contains(err.Error(), "302") {
