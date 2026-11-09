@@ -47,6 +47,7 @@ WALLZAOS_WEBHOOK_URL=
 WALLZAOS_WEBHOOK_SECRET=
 # Set true only for local HTTP testing against localhost.
 WALLZAOS_WEBHOOK_ALLOW_LOCAL_HTTP=false
+WALLZAOS_WEBHOOK_RETENTION_DAYS=30
 
 # You can use this script to set the time zone for your container.
 # See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for a list of timezones"
