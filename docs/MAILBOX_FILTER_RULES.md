@@ -67,9 +67,10 @@ mailbox under the `Shared` namespace. Revoking the ACL removes access through
 IMAP; existing sessions should be disconnected before assuming revocation is
 instantaneous.
 
-The global shared-mailbox index uses Dovecot's local dictionary at
-`/var/lib/dovecot/db/shared-mailboxes`. Keep that path on the Dovecot
-container's persistent writable filesystem. The feature is deliberately
+The global shared-mailbox index uses Dovecot's file dictionary at
+`/var/vmail/shared-mailboxes.db`. This path is on BillionMail's existing
+persistent `./vmail-data:/var/vmail` volume and is writable by the `vmail:mail`
+identity created by the Dovecot entrypoint. The feature is deliberately
 server-side: do not publish Dovecot's internal listener or expose ACL files
 through a web/static volume.
 
