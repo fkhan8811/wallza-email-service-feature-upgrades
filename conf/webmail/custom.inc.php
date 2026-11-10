@@ -5,7 +5,7 @@
     $config['mime_types'] = '/var/roundcube/config/mime.types';
        
     # Plugins
-    $config['plugins'] = array('password','userinfo','newmail_notifier','emoticons','zipdownload');
+    $config['plugins'] = array('password','userinfo','newmail_notifier','emoticons','zipdownload','acl');
 
     # Password
     $config['password_query'] = 'update mailbox set password = %P where username = %u';
