@@ -51,3 +51,30 @@ from this fork and verify:
 5. IMAP/SMTP and normal delivery continue to work.
 
 Existing Sieve script storage is not migrated or overwritten by this change.
+
+
+## Shared mailboxes
+
+Shared mailbox access is implemented with Dovecot's IMAP ACL plugin and a
+separate `Shared/<mailbox-user>/` namespace. Roundcube exposes the ACL
+controls to mailbox owners; the Dovecot ACL files remain the source of truth
+for read, write, create and delete rights. No mailbox password is shared and
+no mailbox contents are copied.
+
+To share a mailbox, the owner grants the intended mailbox identity access
+through Roundcube's folder permissions. The recipient opens the shared
+mailbox under the `Shared` namespace. Revoking the ACL removes access through
+IMAP; existing sessions should be disconnected before assuming revocation is
+instantaneous.
+
+The global shared-mailbox index uses Dovecot's local dictionary at
+`/var/lib/dovecot/db/shared-mailboxes`. Keep that path on the Dovecot
+container's persistent writable filesystem. The feature is deliberately
+server-side: do not publish Dovecot's internal listener or expose ACL files
+through a web/static volume.
+
+Validate in staging with two real mailbox accounts: grant read-only access,
+confirm the recipient can read but cannot change messages, upgrade to
+read/write, then revoke access and confirm the recipient can no longer open
+the shared namespace. The automated configuration check does not replace
+this two-account runtime check.
