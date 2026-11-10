@@ -103,6 +103,8 @@ jobs:
           grep -Fq "'acl'" ../conf/webmail/custom.inc.php
           grep -Fq 'mail_plugins = $mail_plugins acl' ../conf/dovecot/conf.d/90-acl.conf
           grep -Fq 'mail_plugins = $mail_plugins imap_acl' ../conf/dovecot/conf.d/90-acl.conf
+          grep -Fq 'mail_location = maildir:/var/vmail/%d/%n' ../conf/dovecot/conf.d/10-mail.conf
+          grep -Fq "SELECT '/var/vmail/%d/%n' as home" ../Dockerfiles/dovecot/dovecot.sh
           grep -Fq 'type = shared' ../conf/dovecot/conf.d/90-acl.conf
           grep -Fq 'prefix = Shared/%%u/' ../conf/dovecot/conf.d/90-acl.conf
           grep -Fq 'location = maildir:%%h:INDEXPVT=%h/shared/%%u' ../conf/dovecot/conf.d/90-acl.conf
