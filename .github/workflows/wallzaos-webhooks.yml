@@ -57,7 +57,7 @@ on:
       - "core/frontend/pnpm-lock.yaml"
       - "Dockerfiles/dovecot/**"
       - "conf/dovecot/dovecot.conf"
-      - "conf/dovecot/conf.d/10-master.conf"
+      - "conf/dovecot/conf.d/**"
       - "conf/webmail/custom.inc.php"
       - "docs/MAILBOX_FILTER_RULES.md"
       - "docker-compose.yml"
