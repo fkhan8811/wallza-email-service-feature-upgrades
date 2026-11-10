@@ -25,7 +25,7 @@ on:
       - "core/frontend/pnpm-lock.yaml"
       - "Dockerfiles/dovecot/**"
       - "conf/dovecot/dovecot.conf"
-      - "conf/dovecot/conf.d/10-master.conf"
+      - "conf/dovecot/conf.d/**"
       - "conf/webmail/custom.inc.php"
       - "docs/MAILBOX_FILTER_RULES.md"
       - "docker-compose.yml"
@@ -100,6 +100,11 @@ jobs:
           grep -Eq '^protocols = .*sieve' ../conf/dovecot/dovecot.conf
           grep -Fq 'port = 4190' ../conf/dovecot/conf.d/10-master.conf
           grep -Fq "'managesieve'" ../conf/webmail/custom.inc.php
+          grep -Fq "'acl'" ../conf/webmail/custom.inc.php
+          grep -Fq 'mail_plugins = $mail_plugins acl' ../conf/dovecot/conf.d/90-acl.conf
+          grep -Fq 'type = shared' ../conf/dovecot/conf.d/90-acl.conf
+          grep -Fq 'prefix = Shared/%%u/' ../conf/dovecot/conf.d/90-acl.conf
+          grep -Fq 'acl = vfile' ../conf/dovecot/conf.d/90-acl.conf
           grep -Fq "tls://dovecot:4190" ../conf/webmail/custom.inc.php
           if grep -Eq '^[[:space:]]*-[[:space:]]*"?[^"]*4190:4190' ../docker-compose.yml; then
             echo "ManageSieve must remain internal to the Docker network"
