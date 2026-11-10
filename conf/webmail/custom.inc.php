@@ -5,7 +5,10 @@
     $config['mime_types'] = '/var/roundcube/config/mime.types';
        
     # Plugins
-    $config['plugins'] = array('password','userinfo','newmail_notifier','emoticons','zipdownload','managesieve');
+    $config['plugins'] = array('password','userinfo','newmail_notifier','emoticons','zipdownload','managesieve','acl');
+
+    # Roundcube IMAP ACL controls let mailbox owners grant/revoke access to shared folders.
+    # Dovecot enforces the actual permissions server-side.
 
     # Dovecot ManageSieve: server-side mailbox filters (internal Docker network).
     # STARTTLS is negotiated over the private BillionMail bridge network.
