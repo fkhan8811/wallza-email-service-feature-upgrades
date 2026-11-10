@@ -1,0 +1,53 @@
+name: WallzaOS shared mailbox ACL checks
+
+on:
+  push:
+    branches:
+      - wallza/shared-mailbox-acl-dev
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - "conf/dovecot/conf.d/**"
+      - "conf/webmail/custom.inc.php"
+      - "Dockerfiles/dovecot/**"
+      - "docs/WALLZA_SHARED_MAILBOX_ACL.md"
+      - ".github/workflows/wallzaos-shared-mailboxes.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shared-mailbox-acl-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dovecot-acl:
+    name: Dovecot ACL configuration and image validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build the existing BillionMail Dovecot image
+        run: docker build -f Dockerfiles/dovecot/Dockerfile -t wallza-dovecot-acl-ci Dockerfiles/dovecot
+      - name: Verify Dovecot ACL modules
+        run: |
+          docker run --rm --entrypoint sh wallza-dovecot-acl-ci -ec '
+            test -f /usr/lib/dovecot/modules/lib01_acl_plugin.so
+            test -f /usr/lib/dovecot/modules/lib02_imap_acl_plugin.so
+          '
+      - name: Parse the shared ACL configuration
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/conf/dovecot/conf.d/90-acl.conf:/etc/dovecot/conf.d/90-acl.conf:ro" \
+            --entrypoint doveconf wallza-dovecot-acl-ci \
+            -c /etc/dovecot/conf.d/90-acl.conf -n
+      - name: Verify the real BillionMail mailbox-home mapping
+        run: |
+          grep -Fq 'mail_location = maildir:/var/vmail/%d/%n' conf/dovecot/conf.d/10-mail.conf
+          grep -Fq "SELECT '/var/vmail/%d/%n' as home" Dockerfiles/dovecot/dovecot.sh
+          grep -Fq 'acl_shared_dict = file:/var/vmail/shared-mailboxes.db' conf/dovecot/conf.d/90-acl.conf
+          grep -Fq 'prefix = Shared/%%u/' conf/dovecot/conf.d/90-acl.conf
+          grep -Fq 'location = maildir:%%h:INDEXPVT=%h/shared/%%u' conf/dovecot/conf.d/90-acl.conf
+          grep -Fq "'acl'" conf/webmail/custom.inc.php
