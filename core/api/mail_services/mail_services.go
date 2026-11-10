@@ -30,4 +30,8 @@ type IMailServicesV1 interface {
 	SetPostfixConfig(ctx context.Context, req *v1.SetPostfixConfigReq) (res *v1.SetPostfixConfigRes, err error)
 	SetAllPostfixConfig(ctx context.Context, req *v1.SetAllPostfixConfigReq) (res *v1.SetAllPostfixConfigRes, err error)
 	GetPostfixConfig(ctx context.Context, req *v1.GetPostfixConfigReq) (res *v1.GetPostfixConfigRes, err error)
+	GetWallzaOSWebhookList(ctx context.Context, req *v1.GetWallzaOSWebhookListReq) (res *v1.GetWallzaOSWebhookListRes, err error)
+	GetWallzaOSWebhookDetail(ctx context.Context, req *v1.GetWallzaOSWebhookDetailReq) (res *v1.GetWallzaOSWebhookDetailRes, err error)
+	RetryWallzaOSWebhook(ctx context.Context, req *v1.RetryWallzaOSWebhookReq) (res *v1.RetryWallzaOSWebhookRes, err error)
+	IngestProviderComplaint(ctx context.Context, req *v1.IngestProviderComplaintReq) (res *v1.IngestProviderComplaintRes, err error)
 }

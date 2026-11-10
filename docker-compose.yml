@@ -62,7 +62,10 @@ services:
             - rspamd
 
     dovecot-billionmail:
-      image: billionmail/dovecot:1.6
+      image: wallza/billionmail-dovecot:1.6
+      build:
+        context: ./Dockerfiles/dovecot
+        dockerfile: Dockerfile
       hostname: dovecot
       depends_on:
         - pgsql-billionmail
@@ -197,6 +200,10 @@ services:
       environment:
         - TZ=${TZ}
         - FAIL2BAN_INIT=${FAIL2BAN_INIT:-y}
+        - WALLZAOS_WEBHOOK_URL=${WALLZAOS_WEBHOOK_URL:-}
+        - WALLZAOS_WEBHOOK_SECRET=${WALLZAOS_WEBHOOK_SECRET:-}
+        - WALLZAOS_WEBHOOK_ALLOW_LOCAL_HTTP=${WALLZAOS_WEBHOOK_ALLOW_LOCAL_HTTP:-false}
+        - WALLZAOS_WEBHOOK_RETENTION_DAYS=${WALLZAOS_WEBHOOK_RETENTION_DAYS:-30}
       cap_add:
         - NET_BIND_SERVICE
         - NET_ADMIN

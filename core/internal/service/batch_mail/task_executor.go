@@ -709,7 +709,73 @@ func (e *TaskExecutor) getNextRecipientBatch(ctx context.Context, taskId, lastId
 }
 
 // processRecipientBatch
+// filterAbnormalRecipients applies the suppression list again at execution time.
+// This catches complaints received after a campaign's recipient list was imported.
+func filterAbnormalRecipients(ctx context.Context, recipients []*entity.RecipientInfo) ([]*entity.RecipientInfo, error) {
+	if len(recipients) == 0 {
+		return recipients, nil
+	}
+
+	emails := make([]string, 0, len(recipients))
+	for _, recipient := range recipients {
+		emails = append(emails, strings.ToLower(strings.TrimSpace(recipient.Recipient)))
+	}
+
+	arr, err := g.DB().Model("abnormal_recipient").Ctx(ctx).
+		Where("count >= ?", 3).
+		Where("LOWER(recipient) IN (?)", emails).
+		Array("recipient")
+	if err != nil {
+		return nil, fmt.Errorf("failed to check recipient suppression list: %w", err)
+	}
+	blocked := make([]string, 0, len(arr))
+	for _, item := range arr {
+		blocked = append(blocked, item.String())
+	}
+	if len(blocked) == 0 {
+		return recipients, nil
+	}
+
+	blockedMap := make(map[string]struct{}, len(blocked))
+	for _, email := range blocked {
+		blockedMap[strings.ToLower(email)] = struct{}{}
+	}
+
+	filtered := make([]*entity.RecipientInfo, 0, len(recipients))
+	suppressedIDs := make([]int, 0)
+	now := time.Now().Unix()
+	for _, recipient := range recipients {
+		if _, suppressed := blockedMap[strings.ToLower(strings.TrimSpace(recipient.Recipient))]; suppressed {
+			suppressedIDs = append(suppressedIDs, recipient.Id)
+			continue
+		}
+		filtered = append(filtered, recipient)
+	}
+
+	if len(suppressedIDs) > 0 {
+		_, err = g.DB().Model("recipient_info").Ctx(ctx).
+			WhereIn("id", suppressedIDs).
+			Where("is_sent", 2).
+			Data(g.Map{"is_sent": 3, "sent_time": now}).
+			Update()
+		if err != nil {
+			return nil, fmt.Errorf("failed to mark newly suppressed campaign recipients: %w", err)
+		}
+		g.Log().Infof(ctx, "Suppressed %d recipient(s) before send because of hard-suppression rules", len(suppressedIDs))
+	}
+	return filtered, nil
+}
+
 func (e *TaskExecutor) processRecipientBatch(ctx context.Context, task *entity.EmailTask, recipients []*entity.RecipientInfo, emailContent string) error {
+	var err error
+	recipients, err = filterAbnormalRecipients(ctx, recipients)
+	if err != nil {
+		return err
+	}
+	if len(recipients) == 0 {
+		return nil
+	}
+
 	// create result channel, buffer size same as recipient count
 	resultChan := make(chan *SendResult, len(recipients))
 
