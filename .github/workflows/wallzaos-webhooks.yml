@@ -102,9 +102,12 @@ jobs:
           grep -Fq "'managesieve'" ../conf/webmail/custom.inc.php
           grep -Fq "'acl'" ../conf/webmail/custom.inc.php
           grep -Fq 'mail_plugins = $mail_plugins acl' ../conf/dovecot/conf.d/90-acl.conf
+          grep -Fq 'mail_plugins = $mail_plugins imap_acl' ../conf/dovecot/conf.d/90-acl.conf
           grep -Fq 'type = shared' ../conf/dovecot/conf.d/90-acl.conf
           grep -Fq 'prefix = Shared/%%u/' ../conf/dovecot/conf.d/90-acl.conf
+          grep -Fq 'location = maildir:%%h:INDEXPVT=%h/shared/%%u' ../conf/dovecot/conf.d/90-acl.conf
           grep -Fq 'acl = vfile' ../conf/dovecot/conf.d/90-acl.conf
+          grep -Fq 'acl_shared_dict = file:/var/vmail/shared-mailboxes.db' ../conf/dovecot/conf.d/90-acl.conf
           grep -Fq "tls://dovecot:4190" ../conf/webmail/custom.inc.php
           if grep -Eq '^[[:space:]]*-[[:space:]]*"?[^"]*4190:4190' ../docker-compose.yml; then
             echo "ManageSieve must remain internal to the Docker network"
@@ -114,6 +117,7 @@ jobs:
         run: |
           docker build -t wallza-dovecot-ci ../Dockerfiles/dovecot
           docker run --rm --entrypoint sh wallza-dovecot-ci -c 'dpkg -s dovecot-managesieved >/dev/null'
+          docker run --rm --entrypoint sh wallza-dovecot-ci -c 'test -f /usr/lib/dovecot/modules/lib01_acl_plugin.so && test -f /usr/lib/dovecot/modules/lib02_imap_acl_plugin.so'
           docker run --rm -v "$GITHUB_WORKSPACE/conf/dovecot:/etc/dovecot:ro" --entrypoint doveconf wallza-dovecot-ci -n -c /etc/dovecot/dovecot.conf
       - name: Run webhook, complaint-ingestion and transactional suppression unit tests
         run: |
